@@ -1,0 +1,17 @@
+dspy-ai>=2.0.4
+tavily-python>=0.1.9
+crawl4ai>=0.1.0
+python-dotenv>=1.0.0
+rich>=13.0.0
+pandas>=2.0.0
+tabulate>=0.9.0
+requests>=2.31.0
+langfuse>=2.0.0
+tenacity>=8.2.0
+typing-extensions>=4.5.0
+python-docx>=0.8.11
+pdfkit>=1.0.0
+python-pptx>=0.6.21
+wkhtmltopdf-pack>=0.12.6
+streamlit>=1.32.0
+streamlit-pills>=0.3.0 
