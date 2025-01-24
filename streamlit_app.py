@@ -171,6 +171,67 @@ class StreamlitResearchUI:
         )
         st.session_state.selected_section = selected_section
 
+        # Add download options in sidebar
+        st.sidebar.title("Download Report")
+
+        # Markdown download
+        markdown_content = format_markdown_report(report_data)
+        st.sidebar.download_button(
+            "📝 Download as Markdown",
+            markdown_content,
+            file_name=f"research_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md",
+            mime="text/markdown"
+        )
+
+        # Word document download
+        if st.sidebar.button("📄 Download as Word Document"):
+            try:
+                doc_path = self.agent.export_to_docx(
+                    report_data,
+                    Path(st.session_state.file_path).parent / "report"
+                )
+                if doc_path and doc_path.exists():
+                    with open(doc_path, 'rb') as f:
+                        st.sidebar.download_button(
+                            "📄 Download Word Document",
+                            f,
+                            file_name=f"research_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        )
+                else:
+                    st.sidebar.error("Failed to generate Word document")
+            except Exception as e:
+                st.sidebar.error(f"Error generating Word document: {str(e)}")
+
+        # PDF download
+        if st.sidebar.button("📑 Download as PDF"):
+            try:
+                with st.spinner("Generating PDF..."):
+                    pdf_path = self.agent.export_to_pdf(
+                        report_data,
+                        Path(st.session_state.file_path).parent / "report"
+                    )
+                    if pdf_path and pdf_path.exists():
+                        with open(pdf_path, 'rb') as f:
+                            st.sidebar.download_button(
+                                "📑 Download PDF",
+                                f,
+                                file_name=f"research_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                                mime="application/pdf"
+                            )
+                    else:
+                        st.sidebar.error("Failed to generate PDF")
+            except Exception as e:
+                error_msg = str(e)
+                if "wkhtmltopdf" in error_msg.lower():
+                    st.sidebar.error(error_msg)
+                    st.sidebar.info(
+                        "After installing wkhtmltopdf, please restart the application.")
+                else:
+                    st.sidebar.error(f"Error generating PDF: {error_msg}")
+                    st.sidebar.info(
+                        "Please check the console for more details.")
+
         # Main content area
         st.title(report_data['title'])
         st.markdown(

@@ -27,11 +27,18 @@ This advanced research agent combines DSPy, ReAct, Tavily Search, and Crawl4AI t
    - URL crawling and content processing
 
 4. **Report Organization**
+
    - Structured table of contents
    - Research methodology documentation
    - Section-based organization
    - Follow-up questions section
    - Properly formatted citations
+
+5. **Export Options**
+   - Markdown format with citations and tables
+   - PDF export with professional formatting
+   - Word document (.docx) with proper styling
+   - Interactive web interface
 
 ## Setup
 
@@ -41,7 +48,13 @@ This advanced research agent combines DSPy, ReAct, Tavily Search, and Crawl4AI t
 pip install -r requirements.txt
 ```
 
-2. Create a `.env` file with your API keys:
+2. Install wkhtmltopdf (required for PDF export):
+
+   - **macOS**: `brew install wkhtmltopdf`
+   - **Linux**: `sudo apt-get install wkhtmltopdf`
+   - **Windows**: Download and install from [wkhtmltopdf.org](https://wkhtmltopdf.org/downloads.html)
+
+3. Create a `.env` file with your API keys:
 
 ```
 OPENAI_API_KEY=your_openai_api_key
@@ -64,20 +77,19 @@ TAVILY_API_KEY=your_tavily_api_key
 
 ## Usage
 
-Run the advanced research agent:
+1. Start the Streamlit interface:
 
 ```bash
-python research_agent_advance_example.py
+streamlit run streamlit_app.py
 ```
 
-The agent will:
-
-1. Accept your research query
-2. Generate a research plan using ReAct
-3. Gather and analyze relevant content
-4. Generate a structured outline
-5. Create content with proper citations
-6. Save a comprehensive markdown report
+2. Enter your research query in the text area
+3. Click "Start Research" to begin the research process
+4. Navigate through sections using the sidebar
+5. Download the report in your preferred format:
+   - Markdown (.md)
+   - PDF (requires wkhtmltopdf)
+   - Word Document (.docx)
 
 ### Report Structure
 
@@ -107,6 +119,7 @@ reports/
 - Wikipedia-style citations
 - Internal navigation links
 - Source references with quotes
+- Tables in markdown format
 
 ## Error Handling
 
@@ -116,6 +129,7 @@ The agent includes comprehensive error handling for:
 - Content processing issues
 - File operations
 - Citation processing
+- Export format generation
 
 ## Customization
 
@@ -128,8 +142,20 @@ You can customize:
 
 ## Requirements
 
+### System Requirements
+
 - Python 3.8+
-- DSPy
-- Tavily API access
+- wkhtmltopdf (for PDF export)
+
+### API Requirements
+
 - OpenAI API access
-- Required Python packages (see requirements.txt)
+- Tavily API access
+
+### Python Packages
+
+See `requirements.txt` for the complete list of dependencies.
+
+## Contributing
+
+Feel free to submit issues, fork the repository, and create pull requests for any improvements.

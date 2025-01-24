@@ -15,6 +15,7 @@ from pathlib import Path
 from config import config
 from tenacity import retry, stop_after_attempt, wait_exponential
 import traceback
+from io import StringIO
 
 load_dotenv()
 
@@ -535,6 +536,11 @@ class AdvancedResearchAgent(dspy.Module):
             doc.add_paragraph(
                 f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
+            # Add research methodology
+            doc.add_heading('Research Methodology', 1)
+            for i, step in enumerate(report['research_plan'], 1):
+                doc.add_paragraph(f"{i}. {step}")
+
             # Add sections
             for section in report['sections']:
                 doc.add_heading(section['heading'], 1)
@@ -542,21 +548,57 @@ class AdvancedResearchAgent(dspy.Module):
                 # Add content
                 doc.add_paragraph(section['content'])
 
-                # Add visualizations
-                for viz in section.get('visualizations', []):
-                    if viz.get('path'):
-                        viz_path = output_path.parent / viz['path']
-                        if viz_path.exists():
-                            doc.add_picture(str(viz_path), width=Inches(6))
+                # Add tables
+                if section.get('tables'):
+                    doc.add_heading('Tables', 2)
+                    for table in section['tables']:
+                        # Convert markdown table to docx table
+                        try:
+                            # Parse markdown table into pandas DataFrame
+                            df = pd.read_csv(
+                                StringIO(table), sep='|', skipinitialspace=True)
+                            # Remove empty columns
+                            df = df.dropna(axis=1, how='all')
+
+                            # Create docx table
+                            table_rows = len(df) + 1  # +1 for header
+                            table_cols = len(df.columns)
+                            docx_table = doc.add_table(
+                                rows=table_rows, cols=table_cols)
+                            docx_table.style = 'Table Grid'
+
+                            # Add headers
+                            for j, column in enumerate(df.columns):
+                                docx_table.cell(0, j).text = str(
+                                    column).strip()
+
+                            # Add data
+                            for i, row in enumerate(df.values, start=1):
+                                for j, cell in enumerate(row):
+                                    docx_table.cell(i, j).text = str(
+                                        cell).strip()
+
+                            doc.add_paragraph()  # Add spacing after table
+                        except Exception as table_error:
+                            print(
+                                f"Warning: Could not convert table in section {section['heading']}: {str(table_error)}")
+                            # Add as plain text instead
+                            doc.add_paragraph(table)
 
                 # Add citations
                 if section.get('citations'):
-                    doc.add_paragraph("Sources:", style='Heading 3')
+                    doc.add_heading('Sources', 2)
                     for citation in section['citations']:
                         doc.add_paragraph(
                             f"[{citation['id']}] {citation['text']} - {citation['source'].get('url', 'N/A')}",
                             style='List Number'
                         )
+
+            # Add follow-up questions
+            if report.get('follow_up_questions'):
+                doc.add_heading('Follow-up Questions', 1)
+                for question in report['follow_up_questions']:
+                    doc.add_paragraph(f"• {question}", style='List Bullet')
 
             # Save document
             doc_path = output_path.with_suffix('.docx')
@@ -571,16 +613,120 @@ class AdvancedResearchAgent(dspy.Module):
         """Export the report to a PDF document."""
         try:
             import pdfkit
+            from io import StringIO
+            import platform
 
-            # First save as HTML
-            html_content = self._convert_to_html(report)
+            # Check if wkhtmltopdf is installed and configure it
+            if platform.system() == 'Darwin':  # macOS
+                config = pdfkit.configuration(
+                    wkhtmltopdf='/usr/local/bin/wkhtmltopdf')
+            elif platform.system() == 'Linux':
+                config = pdfkit.configuration(
+                    wkhtmltopdf='/usr/bin/wkhtmltopdf')
+            elif platform.system() == 'Windows':
+                config = pdfkit.configuration(
+                    wkhtmltopdf=r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe')
+            else:
+                config = None
+
+            # First generate HTML content
+            html = f"""
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>{report['title']}</title>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; }}
+                    h1 {{ color: #2c3e50; }}
+                    h2 {{ color: #34495e; margin-top: 30px; }}
+                    table {{ border-collapse: collapse; width: 100%; margin: 20px 0; }}
+                    th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                    th {{ background-color: #f5f5f5; }}
+                    .citation {{ font-size: 0.9em; color: #7f8c8d; }}
+                    .methodology {{ background-color: #f9f9f9; padding: 20px; border-radius: 5px; }}
+                    pre {{ white-space: pre-wrap; word-wrap: break-word; }}
+                </style>
+            </head>
+            <body>
+                <h1>{report['title']}</h1>
+                <p><em>Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</em></p>
+                
+                <div class="methodology">
+                <h2>Research Methodology</h2>
+                <ol>
+            """
+
+            # Add research methodology
+            for step in report['research_plan']:
+                html += f"<li>{step}</li>"
+            html += "</ol></div>"
+
+            # Add sections
+            for section in report['sections']:
+                html += f"<h2>{section['heading']}</h2>"
+                html += f"<div>{section['content']}</div>"
+
+                # Add tables
+                if section.get('tables'):
+                    html += "<h3>Tables</h3>"
+                    for table in section['tables']:
+                        try:
+                            # Convert markdown table to HTML table
+                            df = pd.read_csv(
+                                StringIO(table), sep='|', skipinitialspace=True)
+                            df = df.dropna(axis=1, how='all')
+                            html += df.to_html(index=False, classes='table')
+                        except Exception as table_error:
+                            print(
+                                f"Warning: Could not convert table: {str(table_error)}")
+                            html += f"<pre>{table}</pre>"
+
+                # Add citations
+                if section.get('citations'):
+                    html += '<div class="citation"><h3>Sources:</h3><ol>'
+                    for citation in section['citations']:
+                        html += f"<li>{citation['text']} - {citation['source'].get('url', 'N/A')}</li>"
+                    html += "</ol></div>"
+
+            # Add follow-up questions
+            if report.get('follow_up_questions'):
+                html += "<h2>Follow-up Questions</h2><ul>"
+                for question in report['follow_up_questions']:
+                    html += f"<li>{question}</li>"
+                html += "</ul>"
+
+            html += "</body></html>"
+
+            # Save HTML temporarily
             html_path = output_path.with_suffix('.html')
             with open(html_path, 'w', encoding='utf-8') as f:
-                f.write(html_content)
+                f.write(html)
 
-            # Convert HTML to PDF
+            # PDF conversion options
+            options = {
+                'encoding': 'UTF-8',
+                'margin-top': '20mm',
+                'margin-right': '20mm',
+                'margin-bottom': '20mm',
+                'margin-left': '20mm',
+                'enable-local-file-access': None,
+                'quiet': None
+            }
+
+            # Convert to PDF
             pdf_path = output_path.with_suffix('.pdf')
-            pdfkit.from_file(str(html_path), str(pdf_path))
+            try:
+                pdfkit.from_file(str(html_path), str(pdf_path),
+                                 options=options, configuration=config)
+            except OSError as e:
+                if 'wkhtmltopdf' in str(e):
+                    raise Exception(
+                        "wkhtmltopdf is not installed. Please install it first:\n"
+                        "- On macOS: brew install wkhtmltopdf\n"
+                        "- On Linux: sudo apt-get install wkhtmltopdf\n"
+                        "- On Windows: Download and install from https://wkhtmltopdf.org/downloads.html"
+                    ) from e
+                raise
 
             # Clean up HTML file
             html_path.unlink()
@@ -589,7 +735,7 @@ class AdvancedResearchAgent(dspy.Module):
 
         except Exception as e:
             print(f"Error exporting to PDF: {str(e)}")
-            return None
+            raise  # Re-raise the exception to show the detailed error message
 
     def export_to_pptx(self, report: Dict[str, Any], output_path: Path) -> Path:
         """Export the report to a PowerPoint presentation."""
