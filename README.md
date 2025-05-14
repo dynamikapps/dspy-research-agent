@@ -2,6 +2,32 @@
 
 This advanced research agent combines DSPy, ReAct, Tavily Search, and Crawl4AI to generate comprehensive, well-structured research reports. It features a multi-stage pipeline with context-aware content generation and source attribution.
 
+## Environment Setup
+
+1. Create and activate a conda environment:
+
+```bash
+# Create new environment
+conda create -n research_agent python=3.10
+conda activate research_agent
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+2. Install wkhtmltopdf (required for PDF export):
+
+   - **macOS**: `brew install wkhtmltopdf`
+   - **Linux**: `sudo apt-get install wkhtmltopdf`
+   - **Windows**: Download and install from [wkhtmltopdf.org](https://wkhtmltopdf.org/downloads.html)
+
+3. Create a `.env` file with your API keys:
+
+```
+OPENAI_API_KEY=your_openai_api_key
+TAVILY_API_KEY=your_tavily_api_key
+```
+
 ## Features
 
 1. **ReAct-Based Research Planning**
@@ -39,27 +65,6 @@ This advanced research agent combines DSPy, ReAct, Tavily Search, and Crawl4AI t
    - PDF export with professional formatting
    - Word document (.docx) with proper styling
    - Interactive web interface
-
-## Setup
-
-1. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-2. Install wkhtmltopdf (required for PDF export):
-
-   - **macOS**: `brew install wkhtmltopdf`
-   - **Linux**: `sudo apt-get install wkhtmltopdf`
-   - **Windows**: Download and install from [wkhtmltopdf.org](https://wkhtmltopdf.org/downloads.html)
-
-3. Create a `.env` file with your API keys:
-
-```
-OPENAI_API_KEY=your_openai_api_key
-TAVILY_API_KEY=your_tavily_api_key
-```
 
 ## Available Tools
 
